@@ -24,6 +24,7 @@
       "package": "kz.company.itassistai"
     },
     "web": {
+      "bundler": "metro",
       "favicon": "./assets/favicon.png",
       "title": "IT Assist AI"
     }
