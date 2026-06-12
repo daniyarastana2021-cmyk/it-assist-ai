@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "IT Assist AI",
+    "slug": "it-assist-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F6CBD"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "kz.company.itassistai"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "backgroundColor": "#0F6CBD"
+      },
+      "package": "kz.company.itassistai"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "title": "IT Assist AI"
+    }
+  }
+}
