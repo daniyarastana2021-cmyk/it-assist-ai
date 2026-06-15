@@ -1,48 +1,32 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { getUserProfile } from '../services/authService';
+import React, { createContext, useContext, useState } from 'react';
+
+const DEMO_USER = {
+  uid: 'demo-user-001',
+  email: 'demo@itassist.ai',
+  displayName: 'Демо Пользователь',
+};
+
+const DEMO_PROFILE = {
+  uid: 'demo-user-001',
+  email: 'demo@itassist.ai',
+  displayName: 'Демо Пользователь',
+  role: 'employee',
+  department: 'IT',
+  position: 'Сотрудник',
+};
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let unsub = () => {};
-    try {
-      unsub = onAuthStateChanged(auth, async firebaseUser => {
-        if (firebaseUser) {
-          setUser(firebaseUser);
-          try {
-            const p = await getUserProfile(firebaseUser.uid);
-            setProfile(p);
-          } catch {
-            setProfile(null);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-        }
-        setLoading(false);
-      });
-    } catch {
-      setLoading(false);
-    }
-    return unsub;
-  }, []);
-
-  const refreshProfile = async () => {
-    if (user) {
-      const p = await getUserProfile(user.uid);
-      setProfile(p);
-    }
-  };
+  const [profile, setProfile] = useState(DEMO_PROFILE);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
+    <AuthContext.Provider value={{
+      user: DEMO_USER,
+      profile,
+      loading: false,
+      refreshProfile: () => {},
+    }}>
       {children}
     </AuthContext.Provider>
   );

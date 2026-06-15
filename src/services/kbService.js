@@ -1,68 +1,16 @@
-import {
-  collection,
-  getDocs,
-  getDoc,
-  doc,
-  query,
-  where,
-  orderBy,
-  addDoc,
-  updateDoc,
-  increment,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
-
-export async function getArticles(category = null) {
-  let q = category
-    ? query(
-        collection(db, 'kb_articles'),
-        where('status', '==', 'published'),
-        where('category', '==', category),
-        orderBy('views', 'desc')
-      )
-    : query(
-        collection(db, 'kb_articles'),
-        where('status', '==', 'published'),
-        orderBy('views', 'desc')
-      );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
-export async function getArticleById(id) {
-  const snap = await getDoc(doc(db, 'kb_articles', id));
-  if (!snap.exists()) return null;
-  await updateDoc(doc(db, 'kb_articles', id), { views: increment(1) });
-  return { id: snap.id, ...snap.data() };
-}
-
-export async function rateArticle(id, helpful) {
-  await updateDoc(doc(db, 'kb_articles', id), {
-    [helpful ? 'helpful' : 'notHelpful']: increment(1),
-  });
-}
-
-export async function createArticle(data) {
-  const ref = await addDoc(collection(db, 'kb_articles'), {
-    ...data,
-    views: 0,
-    helpful: 0,
-    notHelpful: 0,
+// Локальная база знаний (без Firebase)
+let articles = [
+  {
+    id: '1',
+    title: 'Не работает Outlook — первые шаги',
+    category: 'outlook',
+    tags: ['outlook', 'email', 'решение'],
     status: 'published',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return ref.id;
-}
-
-export async function seedKBArticles() {
-  const articles = [
-    {
-      title: 'Не работает Outlook — первые шаги',
-      category: 'outlook',
-      tags: ['outlook', 'email', 'решение'],
-      content: `## Проблема: Outlook не запускается или не синхронизирует почту
+    views: 42,
+    helpful: 18,
+    notHelpful: 2,
+    author: 'IT Support',
+    content: `## Проблема: Outlook не запускается или не синхронизирует почту
 
 **Шаг 1.** Перезапустите Outlook и компьютер.
 
@@ -78,13 +26,18 @@ export async function seedKBArticles() {
 - Удалите файлы .ost (не .pst!)
 
 Если проблема не решена — создайте заявку.`,
-      author: 'IT Support',
-    },
-    {
-      title: 'Подключение к VPN',
-      category: 'vpn',
-      tags: ['vpn', 'подключение', 'удалённая работа'],
-      content: `## Настройка VPN-подключения
+  },
+  {
+    id: '2',
+    title: 'Подключение к VPN',
+    category: 'vpn',
+    tags: ['vpn', 'подключение', 'удалённая работа'],
+    status: 'published',
+    views: 35,
+    helpful: 24,
+    notHelpful: 1,
+    author: 'IT Support',
+    content: `## Настройка VPN-подключения
 
 **Требования:** Учётная запись компании, установленный VPN-клиент.
 
@@ -97,34 +50,55 @@ export async function seedKBArticles() {
 **Шаг 4.** При ошибке аутентификации — проверьте MFA в Microsoft Authenticator.
 
 **Шаг 5.** Если соединение обрывается — смените сеть или перезапустите клиент.`,
-      author: 'IT Support',
-    },
-    {
-      title: 'Настройка Microsoft Teams',
-      category: 'teams',
-      tags: ['teams', 'видеозвонок', 'чат'],
-      content: `## Первичная настройка Teams
+  },
+  {
+    id: '3',
+    title: 'Настройка Microsoft Teams',
+    category: 'teams',
+    tags: ['teams', 'видеозвонок', 'чат'],
+    status: 'published',
+    views: 28,
+    helpful: 15,
+    notHelpful: 0,
+    author: 'IT Support',
+    content: `## Первичная настройка Teams
 
 **Установка:** Скачайте Teams с teams.microsoft.com или установите из Microsoft Store.
 
 **Вход:** Используйте корпоративную почту (@yourcompany.kz).
 
 **Микрофон и камера:**
-1. Настройки → Устройства
-2. Выберите нужные микрофон и камеру
-3. Проверьте через тестовый звонок
+- Настройки → Устройства
+- Выберите нужные микрофон и камеру
+- Проверьте через тестовый звонок
 
 **Уведомления:** Настройки → Уведомления → настройте по приоритету.`,
-      author: 'IT Support',
-    },
-  ];
+  },
+];
 
-  for (const article of articles) {
-    const existing = await getDocs(
-      query(collection(db, 'kb_articles'), where('title', '==', article.title))
-    );
-    if (existing.empty) {
-      await createArticle(article);
-    }
+export async function getArticles(category = null) {
+  if (category) return articles.filter(a => a.status === 'published' && a.category === category);
+  return articles.filter(a => a.status === 'published');
+}
+
+export async function getArticleById(id) {
+  const article = articles.find(a => a.id === id);
+  if (article) article.views = (article.views || 0) + 1;
+  return article || null;
+}
+
+export async function rateArticle(id, helpful) {
+  const article = articles.find(a => a.id === id);
+  if (article) {
+    if (helpful) article.helpful = (article.helpful || 0) + 1;
+    else article.notHelpful = (article.notHelpful || 0) + 1;
   }
 }
+
+export async function createArticle(data) {
+  const id = String(Date.now());
+  articles.push({ id, views: 0, helpful: 0, notHelpful: 0, status: 'published', ...data });
+  return id;
+}
+
+export async function seedKBArticles() {}

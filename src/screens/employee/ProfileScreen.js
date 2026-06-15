@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { Typography, Spacing, Radius } from '../../theme';
 import Avatar from '../../components/common/Avatar';
 import Card from '../../components/common/Card';
-import { logoutUser } from '../../services/authService';
 import { USER_ROLES } from '../../config/constants';
 
 function MenuItem({ icon, label, value, onPress, colors, isSwitch, switchValue, onSwitchChange }) {
@@ -31,14 +30,6 @@ const ROLE_LABELS = { employee: 'Сотрудник', engineer: 'IT Инжене
 export default function ProfileScreen() {
   const { colors, scheme, setScheme } = useTheme();
   const { profile, user } = useAuth();
-
-  async function handleLogout() {
-    Alert.alert('Выход', 'Вы уверены, что хотите выйти?', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: () => logoutUser() },
-    ]);
-  }
-
   const isDark = scheme === 'dark';
 
   return (
@@ -88,15 +79,6 @@ export default function ProfileScreen() {
           <MenuItem icon="📞" label="Поддержка" value="it@company.kz" colors={colors} />
         </Card>
 
-        {/* Logout */}
-        <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: colors.errorLight, borderColor: colors.error }]}
-          onPress={handleLogout}
-        >
-          <Text style={{ color: colors.error, fontWeight: '700', ...Typography.bodyStrong }}>
-            🚪 Выйти из аккаунта
-          </Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );

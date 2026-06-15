@@ -1,82 +1,73 @@
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  serverTimestamp,
-  onSnapshot,
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
+// Локальное хранилище заявок (без Firebase)
+let tickets = [
+  {
+    id: '1',
+    title: 'Не работает Outlook',
+    description: 'Outlook не запускается после обновления Windows',
+    category: 'outlook',
+    priority: 'high',
+    status: 'in_progress',
+    createdBy: 'demo-user-001',
+    createdByName: 'Демо Пользователь',
+    createdAt: { toDate: () => new Date(Date.now() - 86400000) },
+    comments: [],
+  },
+  {
+    id: '2',
+    title: 'Нет доступа к VPN',
+    description: 'Не могу подключиться к корпоративному VPN из дома',
+    category: 'vpn',
+    priority: 'medium',
+    status: 'new',
+    createdBy: 'demo-user-001',
+    createdByName: 'Демо Пользователь',
+    createdAt: { toDate: () => new Date(Date.now() - 3600000) },
+    comments: [],
+  },
+];
+
+let nextId = 3;
 
 export async function createTicket(data) {
-  const ref = await addDoc(collection(db, 'tickets'), {
+  const id = String(nextId++);
+  tickets.unshift({
+    id,
     ...data,
     status: 'new',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: { toDate: () => new Date() },
     comments: [],
   });
-  return ref.id;
+  return id;
 }
 
 export async function getMyTickets(userId) {
-  const q = query(
-    collection(db, 'tickets'),
-    where('createdBy', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return tickets.filter(t => t.createdBy === userId);
 }
 
 export async function getAllTickets() {
-  const q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return [...tickets];
 }
 
 export async function getTicketById(id) {
-  const snap = await getDoc(doc(db, 'tickets', id));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  return tickets.find(t => t.id === id) || null;
 }
 
-export async function updateTicketStatus(id, status, comment = '') {
-  await updateDoc(doc(db, 'tickets', id), {
-    status,
-    updatedAt: serverTimestamp(),
-    ...(comment && { lastComment: comment }),
-  });
+export async function updateTicketStatus(id, status) {
+  const t = tickets.find(t => t.id === id);
+  if (t) t.status = status;
 }
 
 export async function addComment(ticketId, userId, displayName, text) {
-  const ticket = await getTicketById(ticketId);
-  const comments = ticket?.comments || [];
-  await updateDoc(doc(db, 'tickets', ticketId), {
-    comments: [
-      ...comments,
-      { userId, displayName, text, createdAt: new Date().toISOString() },
-    ],
-    updatedAt: serverTimestamp(),
-  });
+  const t = tickets.find(t => t.id === ticketId);
+  if (t) {
+    t.comments.push({ userId, displayName, text, createdAt: new Date().toISOString() });
+  }
 }
 
 export function subscribeToTickets(userId, role, callback) {
-  let q;
-  if (role === 'employee') {
-    q = query(
-      collection(db, 'tickets'),
-      where('createdBy', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-  } else {
-    q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
-  }
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  });
+  const data = role === 'employee'
+    ? tickets.filter(t => t.createdBy === userId)
+    : [...tickets];
+  callback(data);
+  return () => {};
 }
