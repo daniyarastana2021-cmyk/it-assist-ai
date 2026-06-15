@@ -3,7 +3,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
-  multiFactor,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -24,7 +23,6 @@ export async function registerUser(email, password, displayName) {
     role,
     department: '',
     position: '',
-    mfaEnabled: false,
     createdAt: serverTimestamp(),
   });
 
@@ -54,12 +52,3 @@ export async function updateUserRole(uid, role) {
   await updateDoc(doc(db, 'users', uid), { role });
 }
 
-// MFA — требует Firebase Identity Platform (платный Blaze план)
-// ⚠️  Не подключайте без необходимости — это переведёт проект на платный тариф
-// Используйте только если осознанно переходите на Blaze Plan
-export function getMFAResolver(error) {
-  // Placeholder для будущего подключения MFA
-  // Реализация: https://firebase.google.com/docs/auth/web/mfa
-  console.warn('MFA требует Blaze план. Текущий тариф: Spark (бесплатный).');
-  return null;
-}
