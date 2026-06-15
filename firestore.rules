@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(uid())).data.role;
+    }
+
+    function isAdmin() {
+      return isAuth() && userRole() == 'admin';
+    }
+
+    function isEngineerOrAdmin() {
+      return isAuth() && (userRole() == 'engineer' || userRole() == 'admin');
+    }
+
+    // ── users ─────────────────────────────────────────────────────────────────
+    // Каждый пользователь видит только свой профиль. Администратор — все.
+    match /users/{userId} {
+      allow read:   if isAuth() && (uid() == userId || isAdmin());
+      allow create: if isAuth() && uid() == userId;
+      allow update: if isAuth() && (uid() == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── tickets ───────────────────────────────────────────────────────────────
+    // Сотрудник видит только свои заявки. Инженер и Администратор — все.
+    match /tickets/{ticketId} {
+      allow read:
+        if isAuth() && (
+          resource.data.createdBy == uid() ||
+          isEngineerOrAdmin()
+        );
+      allow create: if isAuth();
+      allow update:
+        if isAuth() && (
+          resource.data.createdBy == uid() ||
+          isEngineerOrAdmin()
+        );
+      allow delete: if isAdmin();
+    }
+
+    // ── kb_articles ───────────────────────────────────────────────────────────
+    // Любой авторизованный пользователь читает статьи.
+    // Создавать/редактировать/удалять — только инженер или администратор.
+    match /kb_articles/{articleId} {
+      allow read:             if isAuth();
+      allow create, update:   if isEngineerOrAdmin();
+      allow delete:           if isAdmin();
+    }
+
+    // ── запрет всего остального ───────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
