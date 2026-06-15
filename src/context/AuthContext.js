@@ -11,21 +11,26 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async firebaseUser => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        try {
-          const p = await getUserProfile(firebaseUser.uid);
-          setProfile(p);
-        } catch {
+    let unsub = () => {};
+    try {
+      unsub = onAuthStateChanged(auth, async firebaseUser => {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          try {
+            const p = await getUserProfile(firebaseUser.uid);
+            setProfile(p);
+          } catch {
+            setProfile(null);
+          }
+        } else {
+          setUser(null);
           setProfile(null);
         }
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
+        setLoading(false);
+      });
+    } catch {
       setLoading(false);
-    });
+    }
     return unsub;
   }, []);
 
